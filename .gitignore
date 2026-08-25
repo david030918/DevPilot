@@ -1,0 +1,32 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Frontend
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+
+# .NET
+bin/
+obj/
+*.user
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store
+
+# Office temporary files
+~$*.docx
