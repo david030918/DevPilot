@@ -10,4 +10,12 @@ public class AppDbContext : DbContext
     }
     
     public DbSet<Project> Projects => Set<Project>();
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(AppDbContext).Assembly);
+    }
 }
