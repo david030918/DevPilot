@@ -1,4 +1,11 @@
+using DevPilot.Api.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddCors(options =>
 {
@@ -13,6 +20,17 @@ var app = builder.Build();
 
 app.UseCors();
 app.MapHealthChecks("/health");
+
+app.MapGet("/api/database-check", async (AppDbContext db) =>
+{
+    var canConnect = await db.Database.CanConnectAsync();
+
+    return Results.Ok(new
+    {
+        database = "PostgreSQL",
+        connected = canConnect
+    });
+});
 
 app.MapGet("/api/overview", () => Results.Ok(new
 {

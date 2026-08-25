@@ -63,13 +63,13 @@ cd frontend && npm install && npm run dev
 
 ## V1.1 — Backend Foundation
 
-- [ ] PostgreSQL
+- [x] PostgreSQL
 
-- [ ] Database connection
+- [x] Database connection
 
-- [ ] First entity: `Project`
+- [x] First entity: `Project`
 
-- [ ] Database migrations
+- [x] Database migrations
 
 - [ ] Logging
 

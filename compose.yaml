@@ -19,7 +19,9 @@ services:
       context: ./backend
     environment:
       ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Development
       AI_SERVICE_URL: ${AI_SERVICE_URL:-http://ai-service:8000}
+      ConnectionStrings__DefaultConnection: Host=database;Port=5432;Database=${POSTGRES_DB:-devpilot};Username=${POSTGRES_USER:-devpilot};Password=${POSTGRES_PASSWORD:-devpilot}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     healthcheck:
@@ -40,7 +42,24 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+  
+  database:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-devpilot}
+      POSTGRES_USER: ${POSTGRES_USER:-devpilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpilot}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - devpilot_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-devpilot} -d ${POSTGRES_DB:-devpilot}"]
+      interval: 5s
+      timeout: 4s
+      retries: 10
 
 volumes:
   frontend_node_modules:
+  devpilot_postgres:
 
