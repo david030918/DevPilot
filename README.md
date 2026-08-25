@@ -71,9 +71,9 @@ cd frontend && npm install && npm run dev
 
 - [x] Database migrations
 
-- [ ] Logging
+- [x] Logging
 
-- [ ] Integration tests
+- [x] Integration tests
 
 ---
 

@@ -2,4 +2,7 @@
   <Folder Name="/backend/">
     <Project Path="backend/DevPilot.Api.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DevPilot.Api.Tests/DevPilot.Api.Tests.csproj" />
+  </Folder>
 </Solution>

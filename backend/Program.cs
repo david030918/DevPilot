@@ -24,7 +24,6 @@ app.MapHealthChecks("/health");
 app.MapGet("/api/database-check", async (AppDbContext db) =>
 {
     var canConnect = await db.Database.CanConnectAsync();
-
     return Results.Ok(new
     {
         database = "PostgreSQL",
