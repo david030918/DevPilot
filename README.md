@@ -45,10 +45,148 @@ cd frontend && npm install && npm run dev
 
 ## Next milestones
 
-1. V1.1 — add PostgreSQL, migrations, error handling, logging, and API tests.
-2. V1.2 — add routing, an API client/query layer, loading/error states, and sign-in UI.
-3. V1.3 — add a GitHub adapter and issue retrieval.
-4. V1.4 — add versioned investigation schemas and a deterministic mock AI provider.
+## V1.0 — Skeleton ✅
+
+- [x] Repository structure
+
+- [x] React application shell
+
+- [x] ASP.NET Core API shell
+
+- [x] FastAPI AI service shell
+
+- [x] Docker setup
+
+- [x] Architecture documentation
+
+---
+
+## V1.1 — Backend Foundation
+
+- [ ] PostgreSQL
+
+- [ ] Database connection
+
+- [ ] First entity: `Project`
+
+- [ ] Database migrations
+
+- [ ] Logging
+
+- [ ] Integration tests
+
+---
+
+## V1.2 — Project API
+
+- [ ] `GET /projects`
+
+- [ ] `POST /projects`
+
+- [ ] `GET /projects/{id}`
+
+- [ ] Request validation
+
+- [ ] Error handling
+
+---
+
+## V1.3 — React Application Foundation
+
+- [ ] React Router
+
+- [ ] TanStack Query
+
+- [ ] API client
+
+- [ ] Projects page
+
+- [ ] Project detail page
+
+---
+
+## V1.4 — GitHub Integration
+
+- [ ] GitHub token configuration
+
+- [ ] GitHub API client
+
+- [ ] Retrieve repository metadata
+
+- [ ] Retrieve GitHub issues
+
+- [ ] Rate-limit handling
+
+- [ ] Error handling
+
+---
+
+## V1.5 — Python AI Contract
+
+- [ ] Pydantic request/response models
+
+- [ ] `POST /ai/investigate-issue`
+
+- [ ] Deterministic fake AI provider
+
+- [ ] `pytest` test suite
+
+---
+
+## V1.6 — Investigation Workflow
+
+Implement the complete investigation flow:
+
+```text
+GitHub Issue
+     ↓
+ASP.NET Core
+     ↓
+FastAPI
+     ↓
+Structured Investigation
+     ↓
+React
+```
+## V1.7 — Tasks
+```text
+Investigation Step
+↓
+Create Task
+↓
+Todo → In Progress → Done
+```
+* Create task from investigation step
+* Store task
+* List tasks
+* Update task status
+* Support Todo
+* Support In Progress
+* Support Done
+
+## V1.8 — Real LLM Integration
+* Integrate OpenAI or another LLM provider
+* Provider configuration
+* Timeout handling
+* Retry handling
+* Structured output
+* Response validation
+* Error handling
+* Secure API-key configuration
+
+## V1.9 — Portfolio Release
+* GitHub Actions CI
+* Backend tests
+* Python tests
+* Frontend tests
+* Screenshots
+* Architecture diagram
+* Demo workflow
+* README improvements
+* Setup instructions
+* Known limitations
+* V2 roadmap
+* Create V1 release/tag
 
 See [docs/architecture.md](docs/architecture.md) for the service boundaries.
 
