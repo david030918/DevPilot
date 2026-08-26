@@ -1,12 +1,9 @@
-namespace DevPilot.Api.Domain.Projects;
+namespace DevPilot.Api.Features.Projects;
 
-public class Project
+public class CreateProjectRequest
 {
-    public long Id { get; set; }
     public required string Name { get; set; }
     public required string RepositoryOwner { get; set; }
     public required string RepositoryName { get; set; }
     public string DefaultBranch { get; set; } = "main";
-    
-    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

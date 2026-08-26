@@ -1,5 +1,7 @@
 using DevPilot.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using DevPilot.Api.Domain.Projects;
+using DevPilot.Api.Features.Projects;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +47,31 @@ app.MapGet("/api/overview", () => Results.Ok(new
         "Create tasks"
     }
 }));
+app.MapPost(
+    "/api/projects",
+    async (CreateProjectRequest request, AppDbContext db) =>
+    {
+        var project = new Project
+        {
+            Name = request.Name,
+            RepositoryOwner = request.RepositoryOwner,
+            RepositoryName = request.RepositoryName,
+            DefaultBranch = request.DefaultBranch
+        };
+    db.Projects.Add(project);
+    await db.SaveChangesAsync();
+    var response = new ProjectResponse(
+        project.Id,
+        project.Name,
+        project.RepositoryOwner,
+        project.RepositoryName,
+        project.DefaultBranch,
+        project.CreatedAt
+    );
+    return Results.Created(
+        $"/api/projects/{project.Id}",
+        response);
+    });
 
 app.Run();
 

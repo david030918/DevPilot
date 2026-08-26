@@ -79,9 +79,9 @@ cd frontend && npm install && npm run dev
 
 ## V1.2 — Project API
 
-- [ ] `GET /projects`
+- [x] `GET /projects`
 
-- [ ] `POST /projects`
+- [x] `POST /projects`
 
 - [ ] `GET /projects/{id}`
 
