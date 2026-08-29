@@ -1,6 +1,10 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
+from app.api.health import router as health_router
+from app.api.investigation import router as investigation_router
+from app.core.handlers import register_exception_handlers
+from app.core.logging import configure_logging
 
+configure_logging()
 
 app = FastAPI(
     title="DevPilot AI Service",
@@ -9,12 +13,6 @@ app = FastAPI(
 )
 
 
-class HealthResponse(BaseModel):
-    status: str
-    service: str
-
-
-@app.get("/health", response_model=HealthResponse)
-async def health() -> HealthResponse:
-    return HealthResponse(status="healthy", service="ai-service")
-
+register_exception_handlers(app)
+app.include_router(health_router)
+app.include_router(investigation_router)
