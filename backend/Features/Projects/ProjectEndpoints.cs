@@ -8,25 +8,6 @@ public static class ProjectEndpoints
 {
     public static void MapProjectEndpoints(this WebApplication endpoints)
     {
-        endpoints.MapGet("/api/database-check", async (AppDbContext db) =>
-        { var canConnect = await db.Database.CanConnectAsync();
-          return Results.Ok(new
-          {
-              database = "PostgreSQL",
-              connected = canConnect
-          }); });
-
-        endpoints.MapGet("/api/overview", () => Results.Ok(new
-        {
-            product = "DevPilot",
-            version = "V1.0 skeleton",
-            status = "Application API is ready",
-            workflow = new[]
-            {
-                "Select repository", "Choose issue", "Run investigation", "Review evidence", "Create tasks"
-            }
-        }));
-
         //Create Projects
         endpoints.MapPost(
             "/api/projects",

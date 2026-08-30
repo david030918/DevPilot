@@ -1,4 +1,5 @@
 using DevPilot.Api.Data;
+using DevPilot.Api.Endpoints;
 using DevPilot.Api.Features.Projects;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
@@ -25,5 +26,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors();
 app.MapHealthChecks("/health");
 app.MapProjectEndpoints();
+app.MapSystemEndpoints();
+app.MapOverviewEndpoints();
 
 app.Run();
