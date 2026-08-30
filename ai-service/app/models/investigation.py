@@ -1,4 +1,4 @@
-from pydantic import BaseModel,Field
+from pydantic import BaseModel, Field
 
 class RepositoryContext(BaseModel):
     owner: str
@@ -29,6 +29,8 @@ class SuggestedTest(BaseModel):
     description: str
 
 class InvestigationResponse(BaseModel):
+    summary: str
     possible_causes: list[PossibleCause]
     investigation_steps: list[InvestigationStep]
+    assumptions: list[str]
     suggested_tests: list[SuggestedTest]

@@ -14,6 +14,8 @@ class FakeInvestigationProvider(InvestigationProvider):
         request: InvestigationRequest,
     ) -> InvestigationResponse:
         return InvestigationResponse(
+            summary="Test Response",
+            assumptions=["Assumptions: The application is running on a Linux server."],
             possible_causes=[
                 PossibleCause(
                     title="example configuration issue",
