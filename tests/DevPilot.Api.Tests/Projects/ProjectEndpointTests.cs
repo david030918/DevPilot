@@ -72,13 +72,18 @@ public class ProjectEndpointTests
             response.StatusCode == HttpStatusCode.Created,
             $"Expected 201 Created, but received {(int)response.StatusCode} {response.StatusCode}. Body: {responseBody}");
 
-        var project = await client.GetAsync(
+        var response2 = await client.GetAsync(
             "/api/projects");
-        Assert.NotNull(project);
-        var list = await project.Content.ReadFromJsonAsync<List<ProjectResponse>>();
-        Assert.Equal(HttpStatusCode.OK, project.StatusCode);
-        Assert.NotNull(list);
-        Assert.Equal("GetProject_ReturnsProject", list.Single().Name);
+        Assert.Equal(
+            HttpStatusCode.OK,
+            response2.StatusCode);
+        var projects = await response2.Content.ReadFromJsonAsync<List<ProjectResponse>>();
+        Assert.NotNull(projects);
+
+        var project = Assert.Single(projects);
+        Assert.Equal(
+            "GetProject_ReturnsProject",
+            project.Name);
     }
 
     [Fact]
@@ -135,28 +140,90 @@ public class ProjectEndpointTests
     }
 
     [Fact]
-    public async Task Duplicate_Authorized()
+    public async Task CreateProject_WhenNameIsEmpty_ReturnsBadRequest()
+    {
+        await using var factory =
+            new DevPilotWebApplicationFactory();
+
+        await factory.InitializeAsync();
+
+        var client = factory.CreateClient();
+
+        var request = new CreateProjectRequest
+        {
+            Name = "",
+            RepositoryOwner = "test-owner",
+            RepositoryName = "test-repository",
+            DefaultBranch = "main"
+        };
+
+        var response = await client.PostAsJsonAsync(
+            "/api/projects",
+            request);
+
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateProject_WhenRepositoryNameIsTooLong_ReturnsBadRequest()
     {
         await using var factory =
             new DevPilotWebApplicationFactory();
         await factory.InitializeAsync();
         var client = factory.CreateClient();
+
         var request = new CreateProjectRequest
         {
-            Name = "GetProject_ReturnsProject",
-            RepositoryOwner = "david030918",
-            RepositoryName = "DevPilot",
+            Name = "test",
+            RepositoryOwner = "test-owner",
+            RepositoryName = new('a', 101),
             DefaultBranch = "main"
         };
+
         var response = await client.PostAsJsonAsync(
             "/api/projects",
             request);
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        //Duplicate
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
+    }
+
+    [Fact]
+    public async Task CreateProject_WhenRepositoryAlreadyExists_ReturnsConflict()
+    {
+        await using var factory =
+            new DevPilotWebApplicationFactory();
+        await factory.InitializeAsync();
+        var client = factory.CreateClient();
+
+        var request1 = new CreateProjectRequest
+        {
+            Name = "P1",
+            RepositoryOwner = "test-owner",
+            RepositoryName = "test-repository",
+            DefaultBranch = "main"
+        };
+        var request2 = new CreateProjectRequest
+        {
+            Name = "P2",
+            RepositoryOwner = "test-owner",
+            RepositoryName = "test-repository",
+            DefaultBranch = "main"
+        };
+
+        var response1 = await client.PostAsJsonAsync(
+            "/api/projects",
+            request1);
+        Assert.Equal(
+            HttpStatusCode.Created,
+            response1.StatusCode);
+
         var response2 = await client.PostAsJsonAsync(
             "/api/projects",
-            request);
+            request2);
         Assert.Equal(HttpStatusCode.Conflict, response2.StatusCode);
     }
 }
