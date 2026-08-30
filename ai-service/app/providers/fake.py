@@ -1,9 +1,9 @@
 from app.models.investigation import (
     InvestigationRequest,
-InvestigationResponse,
-InvestigationStep,
-PossibleCause,
-SuggestedTest
+    InvestigationResponse,
+    InvestigationStep,
+    PossibleCause,
+    SuggestedTest,
 )
 from app.providers.base import InvestigationProvider
 
@@ -31,13 +31,13 @@ class FakeInvestigationProvider(InvestigationProvider):
                     order=1,
                     description=(
                         f"Perform the following steps to investigate the issue '{request.issue.title}':"
-                    )
+                    ),
                 )
             ],
             suggested_tests=[
                 SuggestedTest(
                     name="Configuration Validation",
-                    description="Verify that the application configuration is correct."
+                    description="Verify that the application configuration is correct.",
                 )
-            ]
+            ],
         )

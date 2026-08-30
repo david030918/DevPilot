@@ -37,23 +37,18 @@ def test_investigate_issue_returns_structured_response() -> None:
 
     assert data["possible_causes"][0]["confidence"] == 0.75
     assert data["summary"] == "Test Response"
-    assert data["assumptions"] == [
-        "Assumptions: The application is running on a Linux server."
-    ]
+    assert data["assumptions"] == ["The application is running on a Linux server."]
 
 
-def test_investigate_issue_reject_invalid_request()->None:
-    response=client.post(
+def test_investigate_issue_reject_invalid_request() -> None:
+    response = client.post(
         "/ai/investigate-issue",
-        json={
-            "respository": {
-                "owner":"david030918"
-            }
-        },
+        json={"respository": {"owner": "david030918"}},
     )
     assert response.status_code == 422
-    data=response.json()
+    data = response.json()
     assert "detail" in data
+
 
 def test_investigate_issue_returns_500_for_unsupported_provider() -> None:
     def override_service() -> None:

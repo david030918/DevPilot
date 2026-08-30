@@ -7,16 +7,18 @@ class UnsupportedProviderError(DevPilotError):
         self.provider = provider
         super().__init__(f"Unsupported AI provider: {provider}")
 
+
 class ProviderError(DevPilotError):
     """Base exception for provider errors."""
 
+
 class ProviderTimeoutError(ProviderError):
     """Base exception for provider timeout errors."""
-    pass
+
 
 class ProviderConnectionError(ProviderError):
     """Base exception for provider connection errors."""
-    pass
+
 
 class ProviderResponseError(ProviderError):
     def __init__(self, status_code: int):

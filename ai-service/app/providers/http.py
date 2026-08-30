@@ -18,16 +18,10 @@ async def get_json(
         return response.json()
 
     except httpx.TimeoutException as exc:
-        raise ProviderTimeoutError(
-            "Provider request timed out"
-        ) from exc
+        raise ProviderTimeoutError("Provider request timed out") from exc
 
     except httpx.HTTPStatusError as exc:
-        raise ProviderResponseError(
-            exc.response.status_code
-        ) from exc
+        raise ProviderResponseError(exc.response.status_code) from exc
 
     except httpx.RequestError as exc:
-        raise ProviderConnectionError(
-            "Provider request failed"
-        ) from exc
+        raise ProviderConnectionError("Provider request failed") from exc
