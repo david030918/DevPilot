@@ -9,10 +9,14 @@ from app.models.investigation import PossibleCause
 from app.providers.fake import FakeInvestigationProvider
 from app.services.investigation import InvestigationService
 
-client = TestClient(app)
+
+@pytest.fixture
+def client():
+    with TestClient(app) as test_client:
+        yield test_client
 
 
-def test_investigate_issue_returns_structured_response() -> None:
+def test_investigate_issue_returns_structured_response(client: TestClient) -> None:
     def override_service() -> InvestigationService:
         return InvestigationService(FakeInvestigationProvider())
 
@@ -51,7 +55,7 @@ def test_investigate_issue_returns_structured_response() -> None:
         app.dependency_overrides.clear()
 
 
-def test_investigate_issue_reject_invalid_request() -> None:
+def test_investigate_issue_reject_invalid_request(client: TestClient) -> None:
     response = client.post(
         "/ai/investigate-issue",
         json={"respository": {"owner": "david030918"}},
@@ -61,7 +65,9 @@ def test_investigate_issue_reject_invalid_request() -> None:
     assert "detail" in data
 
 
-def test_investigate_issue_returns_500_for_unsupported_provider() -> None:
+def test_investigate_issue_returns_500_for_unsupported_provider(
+    client: TestClient,
+) -> None:
     def override_service() -> None:
         raise UnsupportedProviderError("invalid-provider")
 
