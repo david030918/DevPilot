@@ -1,7 +1,9 @@
 import httpx
+from pydantic import ValidationError
 
 from app.core.exceptions import (
     ProviderConnectionError,
+    ProviderOutputError,
     ProviderResponseError,
     ProviderTimeoutError,
 )
@@ -66,4 +68,8 @@ class OllamaInvestigationProvider(InvestigationProvider):
         except httpx.RequestError as exc:
             raise ProviderConnectionError(f"Ollama request failed: {exc}") from exc
         data = response.json()
-        return InvestigationResponse.model_validate_json(data["message"]["content"])
+        # Output Validate
+        try:
+            return InvestigationResponse.model_validate_json(data["message"]["content"])
+        except ValidationError as exc:
+            raise ProviderOutputError(f"Ollama response validation failed: {exc}")

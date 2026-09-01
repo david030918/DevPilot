@@ -6,6 +6,7 @@ from app.api.dependencies import get_investigation_service
 from app.core.exceptions import UnsupportedProviderError
 from app.main import app
 from app.models.investigation import PossibleCause
+from app.providers.fake import FakeInvestigationProvider
 from app.services.investigation import InvestigationService
 
 client = TestClient(app)
@@ -13,7 +14,7 @@ client = TestClient(app)
 
 def test_investigate_issue_returns_structured_response() -> None:
     def override_service() -> InvestigationService:
-        raise UnsupportedProviderError("unsupported-provider")
+        return InvestigationService(FakeInvestigationProvider())
 
     app.dependency_overrides[get_investigation_service] = override_service
     try:

@@ -24,3 +24,7 @@ class ProviderResponseError(ProviderError):
     def __init__(self, status_code: int):
         self.status_code = status_code
         super().__init__(f"Provider response error: {status_code}")
+
+
+class ProviderOutputError(Exception):
+    """Base exception for provider output errors."""
