@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     model_name: str = "gpt-3.5-turbo"
     request_timeout_seconds: float = 30.0
     openai_api_key: str | None = None
+    ollama_base_url: str = "http://localhost:11434"
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -6,38 +6,48 @@ from app.api.dependencies import get_investigation_service
 from app.core.exceptions import UnsupportedProviderError
 from app.main import app
 from app.models.investigation import PossibleCause
+from app.services.investigation import InvestigationService
 
 client = TestClient(app)
 
 
 def test_investigate_issue_returns_structured_response() -> None:
-    response = client.post(
-        "/ai/investigate-issue",
-        json={
-            "repository": {
-                "owner": "david030918",
-                "name": "DevPilot",
-                "default_branch": "main",
-            },
-            "issue": {
-                "number": 1,
-                "title": "Login returns 500",
-                "body": "Users cannot sign in.",
-            },
-        },
-    )
+    def override_service() -> InvestigationService:
+        raise UnsupportedProviderError("unsupported-provider")
 
-    assert response.status_code == 200
-    data = response.json()
-    assert "summary" in data
-    assert "assumptions" in data
-    assert "possible_causes" in data
-    assert "investigation_steps" in data
-    assert "suggested_tests" in data
+    app.dependency_overrides[get_investigation_service] = override_service
+    try:
+        response = client.post(
+            "/ai/investigate-issue",
+            json={
+                "repository": {
+                    "owner": "david030918",
+                    "name": "DevPilot",
+                    "default_branch": "main",
+                },
+                "issue": {
+                    "number": 1,
+                    "title": "Login returns 500",
+                    "body": "Users cannot sign in.",
+                },
+            },
+        )
 
-    assert data["possible_causes"][0]["confidence"] == 0.75
-    assert data["summary"] == "Test Response"
-    assert data["assumptions"] == ["The application is running on a Linux server."]
+        assert response.status_code == 200
+        data = response.json()
+        assert "summary" in data
+        assert "assumptions" in data
+        assert "possible_causes" in data
+        assert "investigation_steps" in data
+        assert "suggested_tests" in data
+
+        assert data["possible_causes"][0]["confidence"] == 0.75
+        assert data["summary"] == "Test Response"
+        assert data["assumptions"] == [
+            "Assumptions: The application is running on a Linux server."
+        ]
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_investigate_issue_reject_invalid_request() -> None:
