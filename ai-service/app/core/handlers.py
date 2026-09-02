@@ -4,6 +4,7 @@ from starlette import status
 
 from app.core.exceptions import (
     ProviderConnectionError,
+    ProviderOutputError,
     ProviderResponseError,
     ProviderTimeoutError,
     UnsupportedProviderError,
@@ -62,6 +63,19 @@ async def provider_connection_handler(
     )
 
 
+async def provider_output_handler(
+    request: Request,
+    exc: ProviderOutputError,
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_502_BAD_GATEWAY,
+        content={
+            "error": "provider_output_error",
+            "message": str(exc),
+        },
+    )
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(UnsupportedProviderError)
     async def handle_unsupported_provider(
@@ -90,3 +104,10 @@ def register_exception_handlers(app: FastAPI) -> None:
         exc: ProviderResponseError,
     ) -> JSONResponse:
         return await provider_response_handler(request, exc)
+
+    @app.exception_handler(ProviderOutputError)
+    async def handle_provider_output(
+        request: Request,
+        exc: ProviderOutputError,
+    ) -> JSONResponse:
+        return await provider_output_handler(request, exc)
