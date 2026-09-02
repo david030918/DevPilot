@@ -72,4 +72,6 @@ class OllamaInvestigationProvider(InvestigationProvider):
         try:
             return InvestigationResponse.model_validate_json(data["message"]["content"])
         except ValidationError as exc:
-            raise ProviderOutputError(f"Ollama response validation failed: {exc}")
+            raise ProviderOutputError(
+                f"Ollama response validation failed: {exc}"
+            ) from exc
