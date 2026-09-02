@@ -6,6 +6,7 @@ from starlette import status
 from app.api.dependencies import get_investigation_service
 from app.core.exceptions import (
     ProviderConnectionError,
+    ProviderOutputError,
     ProviderResponseError,
     ProviderTimeoutError,
     UnsupportedProviderError,
@@ -200,6 +201,32 @@ def test_provider_response_error(
         assert response.json() == {
             "error": "provider_response_error",
             "message": "Provider response error: 502",
+        }
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_provider_output_error(
+    client: TestClient, investigation_request: InvestigationRequest
+) -> None:
+    class OutputErrorService:
+        async def investigate(self, request):
+            raise ProviderOutputError("Ollama returned invalid structured output")
+
+    def override_service():
+        return OutputErrorService()
+
+    app.dependency_overrides[get_investigation_service] = override_service
+
+    try:
+        response = client.post(
+            "/ai/investigate-issue",
+            json=investigation_request.model_dump(),
+        )
+        assert response.status_code == status.HTTP_502_BAD_GATEWAY
+        assert response.json() == {
+            "error": "provider_output_error",
+            "message": "Ollama returned invalid structured output",
         }
     finally:
         app.dependency_overrides.clear()
