@@ -26,5 +26,5 @@ class ProviderResponseError(ProviderError):
         super().__init__(f"Provider response error: {status_code}")
 
 
-class ProviderOutputError(Exception):
-    """Base exception for provider output errors."""
+class ProviderOutputError(ProviderError):
+    """Raised when a provider returns invalid structured output."""

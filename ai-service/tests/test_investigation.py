@@ -1,11 +1,22 @@
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
+from starlette import status
 
 from app.api.dependencies import get_investigation_service
-from app.core.exceptions import UnsupportedProviderError
+from app.core.exceptions import (
+    ProviderConnectionError,
+    ProviderResponseError,
+    ProviderTimeoutError,
+    UnsupportedProviderError,
+)
 from app.main import app
-from app.models.investigation import PossibleCause
+from app.models.investigation import (
+    InvestigationRequest,
+    IssueContext,
+    PossibleCause,
+    RepositoryContext,
+)
 from app.providers.fake import FakeInvestigationProvider
 from app.services.investigation import InvestigationService
 
@@ -16,7 +27,23 @@ def client():
         yield test_client
 
 
-def test_investigate_issue_returns_structured_response(client: TestClient) -> None:
+@pytest.fixture
+def investigation_request() -> InvestigationRequest:
+    return InvestigationRequest(
+        repository=RepositoryContext(
+            owner="test",
+            name="test",
+        ),
+        issue=IssueContext(
+            number=1,
+            title="test",
+        ),
+    )
+
+
+def test_investigate_issue_returns_structured_response(
+    client: TestClient, investigation_request: InvestigationRequest
+) -> None:
     def override_service() -> InvestigationService:
         return InvestigationService(FakeInvestigationProvider())
 
@@ -24,18 +51,7 @@ def test_investigate_issue_returns_structured_response(client: TestClient) -> No
     try:
         response = client.post(
             "/ai/investigate-issue",
-            json={
-                "repository": {
-                    "owner": "david030918",
-                    "name": "DevPilot",
-                    "default_branch": "main",
-                },
-                "issue": {
-                    "number": 1,
-                    "title": "Login returns 500",
-                    "body": "Users cannot sign in.",
-                },
-            },
+            json=investigation_request.model_dump(),
         )
 
         assert response.status_code == 200
@@ -66,7 +82,7 @@ def test_investigate_issue_reject_invalid_request(client: TestClient) -> None:
 
 
 def test_investigate_issue_returns_500_for_unsupported_provider(
-    client: TestClient,
+    client: TestClient, investigation_request: InvestigationRequest
 ) -> None:
     def override_service() -> None:
         raise UnsupportedProviderError("invalid-provider")
@@ -76,18 +92,7 @@ def test_investigate_issue_returns_500_for_unsupported_provider(
     try:
         response = client.post(
             "/ai/investigate-issue",
-            json={
-                "repository": {
-                    "owner": "david030918",
-                    "name": "DevPilot",
-                    "default_branch": "main",
-                },
-                "issue": {
-                    "number": 1,
-                    "title": "Login returns 500",
-                    "body": "Users cannot sign in.",
-                },
-            },
+            json=investigation_request.model_dump(),
         )
 
         assert response.status_code == 500
@@ -115,3 +120,86 @@ def test_possible_cause_rejects_confidence_below_zero() -> None:
             explanation="Confidence should be between zero and one.",
             confidence=-0.1,
         )
+
+
+def test_investigate_issue_returns_504_for_provider_timeout(
+    client: TestClient, investigation_request: InvestigationRequest
+) -> None:
+    class TimeoutService:
+        async def investigate(self, request):
+            raise ProviderTimeoutError("Ollama request timed out")
+
+    def override_service():
+        return TimeoutService()
+
+    app.dependency_overrides[get_investigation_service] = override_service
+
+    try:
+        response = client.post(
+            "/ai/investigate-issue",
+            json=investigation_request.model_dump(),
+        )
+
+        assert response.status_code == 504
+
+        assert response.json() == {
+            "error": "provider_timeout",
+            "message": "Ollama request timed out",
+        }
+
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_provider_connection_error(
+    client: TestClient, investigation_request: InvestigationRequest
+) -> None:
+    class ConnectionService:
+        async def investigate(self, request):
+            raise ProviderConnectionError("Ollama Connection Err")
+
+    def override_service():
+        return ConnectionService()
+
+    app.dependency_overrides[get_investigation_service] = override_service
+
+    try:
+        response = client.post(
+            "/ai/investigate-issue",
+            json=investigation_request.model_dump(),
+        )
+        assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+
+        assert response.json() == {
+            "error": "provider_connection_error",
+            "message": "Ollama Connection Err",
+        }
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_provider_response_error(
+    client: TestClient, investigation_request: InvestigationRequest
+) -> None:
+    class ConnectionService:
+        async def investigate(self, request):
+            raise ProviderResponseError(status_code=status.HTTP_502_BAD_GATEWAY)
+
+    def override_service():
+        return ConnectionService()
+
+    app.dependency_overrides[get_investigation_service] = override_service
+
+    try:
+        response = client.post(
+            "/ai/investigate-issue",
+            json=investigation_request.model_dump(),
+        )
+        assert response.status_code == status.HTTP_502_BAD_GATEWAY
+
+        assert response.json() == {
+            "error": "provider_response_error",
+            "message": "Provider response error: 502",
+        }
+    finally:
+        app.dependency_overrides.clear()
