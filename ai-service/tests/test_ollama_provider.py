@@ -5,6 +5,7 @@ import httpx
 import pytest
 
 from app.core.exceptions import (
+    ProviderConnectionError,
     ProviderOutputError,
     ProviderResponseError,
     ProviderTimeoutError,
@@ -136,7 +137,7 @@ async def test_ollama_provider_raises_connection_error(
     investigation_request: InvestigationRequest,
 ) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(500, json={"error": "Internal Server Error"})
+        raise httpx.ConnectError("Connection error", request=request)
 
     transport = httpx.MockTransport(handler)
 
@@ -147,11 +148,9 @@ async def test_ollama_provider_raises_connection_error(
             model_name="ollama",
         )
 
-        request = investigation_request
-
-        with pytest.raises(ProviderResponseError) as result:
-            await provider.investigate(request)
-        assert result.value.status_code == 500
+        with pytest.raises(ProviderConnectionError) as result:
+            await provider.investigate(investigation_request)
+        assert isinstance(result.value.__cause__, httpx.ConnectError)
 
 
 @pytest.mark.asyncio
@@ -207,6 +206,7 @@ async def test_ollama_provider_raises_output_error_for_invalid_json(
                 }
             },
         )
+
     transport = httpx.MockTransport(handler)
 
     async with httpx.AsyncClient(transport=transport) as client:
