@@ -25,7 +25,7 @@ class OllamaInvestigationProvider(InvestigationProvider):
         self,
         request: InvestigationRequest,
     ) -> httpx.Response:
-        max_attempts = 2
+        max_attempts = 3
 
         for attempt in range(max_attempts):
             try:
@@ -71,15 +71,17 @@ class OllamaInvestigationProvider(InvestigationProvider):
             except httpx.TimeoutException as exc:
                 if attempt == max_attempts - 1:
                     raise ProviderTimeoutError("Ollama timed out") from exc
-                await asyncio.sleep(0.5)
+                delay = 0.5 * (2**attempt)
+                await asyncio.sleep(delay)
             except httpx.HTTPStatusError as exc:
                 raise ProviderResponseError(exc.response.status_code) from exc
-
             except httpx.RequestError as exc:
                 if attempt == max_attempts - 1:
                     raise ProviderConnectionError(
                         f"Ollama request failed: {exc}"
                     ) from exc
+                delay = 0.5 * (2**attempt)
+                await asyncio.sleep(delay)
 
         raise RuntimeError("Unreachable")
 

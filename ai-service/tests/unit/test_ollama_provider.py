@@ -259,8 +259,8 @@ async def test_ollama_provider_retries_after_timeout_then_succeeds(
         with pytest.raises(ProviderTimeoutError) as result:
             await provider.investigate(investigation_request)
 
-    assert attempts == 2
-    assert sleep_calls == [0.5]
+    assert attempts == 3
+    assert sleep_calls == [0.5, 1.0]
     assert str(result.value) == "Ollama timed out"
 
 
@@ -291,7 +291,7 @@ async def test_ollama_provider_raises_timeout_after_retries_exhausted(
         with pytest.raises(ProviderTimeoutError) as result:
             await provider.investigate(investigation_request)
 
-    assert attempts == 2
+    assert attempts == 3
     assert isinstance(
         result.value.__cause__,
         httpx.ReadTimeout,
@@ -372,5 +372,62 @@ async def test_ollama_provider_raises_connection_error_after_retries_exhausted(
         with pytest.raises(ProviderConnectionError) as result:
             await provider.investigate(investigation_request)
 
-    assert attempts == 2
+    assert attempts == 3
     assert isinstance(result.value.__cause__, httpx.ConnectError)
+
+
+@pytest.mark.asyncio
+async def test_ollama_provider_uses_exponential_backoff(
+    investigation_request: InvestigationRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    attempts = 0
+    sleep_calls: list[float] = []
+
+    async def fake_sleep(delay: float) -> None:
+        sleep_calls.append(delay)
+
+    monkeypatch.setattr(
+        asyncio,
+        "sleep",
+        fake_sleep,
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        if attempts <= 2:
+            raise httpx.ReadTimeout(
+                "ollama timeout",
+                request=request,
+            )
+        valid_content = {
+            "summary": "Test summary",
+            "possible_causes": [],
+            "investigation_steps": [],
+            "assumptions": [],
+            "suggested_tests": [],
+        }
+
+        return httpx.Response(
+            HTTPStatus.OK,
+            json={
+                "message": {
+                    "role": "assistant",
+                    "content": json.dumps(valid_content),
+                }
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    async with httpx.AsyncClient(transport=transport) as client:
+        provider = OllamaInvestigationProvider(
+            client=client,
+            base_url="http://test",
+            model_name="ollama",
+        )
+        result = await provider.investigate(investigation_request)
+
+    assert attempts == 3
+    assert sleep_calls == [0.5, 1.0]
+    assert str(result.summary) == "Test summary"
