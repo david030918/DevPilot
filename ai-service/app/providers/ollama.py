@@ -1,3 +1,5 @@
+import asyncio
+
 import httpx
 from pydantic import ValidationError
 
@@ -19,57 +21,79 @@ class OllamaInvestigationProvider(InvestigationProvider):
         self.model_name = model_name
         self.client = client
 
-    async def investigate(
+    async def _send_request_with_retry(
         self,
         request: InvestigationRequest,
-    ) -> InvestigationResponse:
-        try:
-            response = await self.client.post(
-                f"{self.base_url}/api/chat",
-                json={
-                    "model": self.model_name,
-                    "stream": False,
-                    "format": InvestigationResponse.model_json_schema(),
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": (
-                                "You are a software engineering "
-                                "investigation assistant. "
-                                "Analyze the supplied GitHub issue. "
-                                "Return a concise summary, plausible causes, "
-                                "investigation steps, assumptions, "
-                                "and suggested tests. "
-                                "Do not present assumptions as established facts."
-                            ),
-                        },
-                        {
-                            "role": "user",
-                            "content": (
-                                f"Repository: "
-                                f"{request.repository.owner}/"
-                                f"{request.repository.name}\n"
-                                f"Default branch: "
-                                f"{request.repository.default_branch}\n\n"
-                                f"Issue #{request.issue.number}\n"
-                                f"Title: {request.issue.title}\n"
-                                f"Body:\n{request.issue.body or ''}"
-                            ),
-                        },
-                    ],
-                },
-            )
+    ) -> httpx.Response:
+        max_attempts = 2
 
-            response.raise_for_status()
-        except httpx.TimeoutException as exc:
-            raise ProviderTimeoutError("Ollama timed out") from exc
-        except httpx.HTTPStatusError as exc:
-            raise ProviderResponseError(exc.response.status_code) from exc
-        except httpx.RequestError as exc:
-            raise ProviderConnectionError(f"Ollama request failed: {exc}") from exc
+        for attempt in range(max_attempts):
+            try:
+                response = await self.client.post(
+                    f"{self.base_url}/api/chat",
+                    json={
+                        "model": self.model_name,
+                        "stream": False,
+                        "format": InvestigationResponse.model_json_schema(),
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": (
+                                    "You are a software engineering "
+                                    "investigation assistant. "
+                                    "Analyze the supplied GitHub issue. "
+                                    "Return a concise summary, plausible causes, "
+                                    "investigation steps, assumptions, "
+                                    "and suggested tests. "
+                                    "Do not present assumptions as established facts."
+                                ),
+                            },
+                            {
+                                "role": "user",
+                                "content": (
+                                    f"Repository: "
+                                    f"{request.repository.owner}/"
+                                    f"{request.repository.name}\n"
+                                    f"Default branch: "
+                                    f"{request.repository.default_branch}\n\n"
+                                    f"Issue #{request.issue.number}\n"
+                                    f"Title: {request.issue.title}\n"
+                                    f"Body:\n{request.issue.body or ''}"
+                                ),
+                            },
+                        ],
+                    },
+                )
+
+                response.raise_for_status()
+                return response
+
+            except httpx.TimeoutException as exc:
+                if attempt == max_attempts - 1:
+                    raise ProviderTimeoutError("Ollama timed out") from exc
+                await asyncio.sleep(0.5)
+            except httpx.HTTPStatusError as exc:
+                raise ProviderResponseError(exc.response.status_code) from exc
+
+            except httpx.RequestError as exc:
+                if attempt == max_attempts - 1:
+                    raise ProviderConnectionError(
+                        f"Ollama request failed: {exc}"
+                    ) from exc
+
+        raise RuntimeError("Unreachable")
+
+    def _parse_response(self, response: httpx.Response) -> InvestigationResponse:
         data = response.json()
         # Output Validate
         try:
             return InvestigationResponse.model_validate_json(data["message"]["content"])
         except ValidationError as exc:
             raise ProviderOutputError(f"Ollama response validation failed: {exc}")
+
+    async def investigate(
+        self,
+        request: InvestigationRequest,
+    ) -> InvestigationResponse:
+        reponse = await self._send_request_with_retry(request)
+        return self._parse_response(reponse)

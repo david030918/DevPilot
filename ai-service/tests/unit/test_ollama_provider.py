@@ -1,3 +1,4 @@
+import asyncio
 import json
 from http import HTTPStatus
 
@@ -219,3 +220,157 @@ async def test_ollama_provider_raises_output_error_for_invalid_json(
         with pytest.raises(ProviderOutputError) as result:
             await provider.investigate(investigation_request)
         assert str(result.value).startswith("Ollama response validation failed:")
+
+
+@pytest.mark.asyncio
+async def test_ollama_provider_retries_after_timeout_then_succeeds(
+    investigation_request: InvestigationRequest,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    attempts = 0
+    sleep_calls: list[float] = []
+
+    async def fake_sleep(delay: float) -> None:
+        sleep_calls.append(delay)
+
+    monkeypatch.setattr(
+        asyncio,
+        "sleep",
+        fake_sleep,
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+
+        raise httpx.ReadTimeout(
+            "timeout",
+            request=request,
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    async with httpx.AsyncClient(transport=transport) as client:
+        provider = OllamaInvestigationProvider(
+            client=client,
+            base_url="http://test",
+            model_name="ollama",
+        )
+        with pytest.raises(ProviderTimeoutError) as result:
+            await provider.investigate(investigation_request)
+
+    assert attempts == 2
+    assert sleep_calls == [0.5]
+    assert str(result.value) == "Ollama timed out"
+
+
+@pytest.mark.asyncio
+async def test_ollama_provider_raises_timeout_after_retries_exhausted(
+    investigation_request: InvestigationRequest,
+) -> None:
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+
+        raise httpx.ReadTimeout(
+            "timeout",
+            request=request,
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    async with httpx.AsyncClient(transport=transport) as client:
+        provider = OllamaInvestigationProvider(
+            client=client,
+            base_url="http://test",
+            model_name="ollama",
+        )
+
+        with pytest.raises(ProviderTimeoutError) as result:
+            await provider.investigate(investigation_request)
+
+    assert attempts == 2
+    assert isinstance(
+        result.value.__cause__,
+        httpx.ReadTimeout,
+    )
+
+
+@pytest.mark.asyncio
+async def test_ollama_provider_retries_after_connection_error_then_succeeds(
+    investigation_request: InvestigationRequest,
+) -> None:
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+
+        if attempts == 1:
+            raise httpx.ConnectError(
+                "connectErr",
+                request=request,
+            )
+        valid_content = {
+            "summary": "Test summary",
+            "possible_causes": [],
+            "investigation_steps": [],
+            "assumptions": [],
+            "suggested_tests": [],
+        }
+
+        return httpx.Response(
+            HTTPStatus.OK,
+            json={
+                "message": {
+                    "role": "assistant",
+                    "content": json.dumps(valid_content),
+                }
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    async with httpx.AsyncClient(transport=transport) as client:
+        provider = OllamaInvestigationProvider(
+            client=client,
+            base_url="http://test",
+            model_name="ollama",
+        )
+
+        result = await provider.investigate(investigation_request)
+
+    assert attempts == 2
+    assert result.summary == "Test summary"
+
+
+@pytest.mark.asyncio
+async def test_ollama_provider_raises_connection_error_after_retries_exhausted(
+    investigation_request: InvestigationRequest,
+) -> None:
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+
+        raise httpx.ConnectError(
+            "connectErr",
+            request=request,
+        )
+
+    transport = httpx.MockTransport(handler)
+    async with httpx.AsyncClient(transport=transport) as client:
+        provider = OllamaInvestigationProvider(
+            client=client,
+            base_url="http://test",
+            model_name="ollama",
+        )
+
+        with pytest.raises(ProviderConnectionError) as result:
+            await provider.investigate(investigation_request)
+
+    assert attempts == 2
+    assert isinstance(result.value.__cause__, httpx.ConnectError)
