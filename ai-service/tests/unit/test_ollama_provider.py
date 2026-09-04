@@ -4,6 +4,7 @@ from http import HTTPStatus
 
 import httpx
 import pytest
+from starlette import status
 
 from app.core.exceptions import (
     ProviderConnectionError,
@@ -431,3 +432,116 @@ async def test_ollama_provider_uses_exponential_backoff(
     assert attempts == 3
     assert sleep_calls == [0.5, 1.0]
     assert str(result.summary) == "Test summary"
+
+
+@pytest.mark.asyncio
+async def test_ollama_provider_retries_after_service_unavailable_then_succeeds(
+    investigation_request: InvestigationRequest,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    attempts = 0
+    sleep_calls: list[float] = []
+
+    async def fake_sleep(delay: float) -> None:
+        sleep_calls.append(delay)
+
+    monkeypatch.setattr(
+        asyncio,
+        "sleep",
+        fake_sleep,
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return httpx.Response(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        valid_content = {
+            "summary": "Test summary",
+            "possible_causes": [],
+            "investigation_steps": [],
+            "assumptions": [],
+            "suggested_tests": [],
+        }
+
+        return httpx.Response(
+            HTTPStatus.OK,
+            json={
+                "message": {
+                    "role": "assistant",
+                    "content": json.dumps(valid_content),
+                }
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    async with httpx.AsyncClient(transport=transport) as client:
+        provider = OllamaInvestigationProvider(
+            client=client,
+            base_url="http://test",
+            model_name="ollama",
+        )
+        result = await provider.investigate(investigation_request)
+
+    assert attempts == 2
+    assert sleep_calls == [0.5]
+    assert str(result.summary) == "Test summary"
+
+
+@pytest.mark.asyncio
+async def test_ollama_provider_does_not_retry_non_retryable_http_error(
+    investigation_request: InvestigationRequest,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    attempts = 0
+    sleep_calls: list[float] = []
+
+    async def fake_sleep(delay: float) -> None:
+        sleep_calls.append(delay)
+
+    monkeypatch.setattr(
+        asyncio,
+        "sleep",
+        fake_sleep,
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return httpx.Response(status_code=status.HTTP_401_UNAUTHORIZED)
+
+        valid_content = {
+            "summary": "Test summary",
+            "possible_causes": [],
+            "investigation_steps": [],
+            "assumptions": [],
+            "suggested_tests": [],
+        }
+
+        return httpx.Response(
+            HTTPStatus.OK,
+            json={
+                "message": {
+                    "role": "assistant",
+                    "content": json.dumps(valid_content),
+                }
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    async with httpx.AsyncClient(transport=transport) as client:
+        provider = OllamaInvestigationProvider(
+            client=client,
+            base_url="http://test",
+            model_name="ollama",
+        )
+        with pytest.raises(ProviderResponseError) as result:
+            await provider.investigate(investigation_request)
+
+    assert attempts == 1
+    assert sleep_calls == []
+    assert result.value.status_code == status.HTTP_401_UNAUTHORIZED

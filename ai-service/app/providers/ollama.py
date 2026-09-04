@@ -2,6 +2,7 @@ import asyncio
 
 import httpx
 from pydantic import ValidationError
+from starlette import status
 
 from app.core.exceptions import (
     ProviderConnectionError,
@@ -20,6 +21,15 @@ class OllamaInvestigationProvider(InvestigationProvider):
         self.base_url = base_url
         self.model_name = model_name
         self.client = client
+        self.retryable_status_codes = {
+            status.HTTP_502_BAD_GATEWAY,
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            status.HTTP_504_GATEWAY_TIMEOUT,
+        }
+
+    async def _wait_before_retry(self, attempt: int) -> None:
+        delay = 0.5 * (2**attempt)
+        await asyncio.sleep(delay)
 
     async def _send_request_with_retry(
         self,
@@ -71,17 +81,22 @@ class OllamaInvestigationProvider(InvestigationProvider):
             except httpx.TimeoutException as exc:
                 if attempt == max_attempts - 1:
                     raise ProviderTimeoutError("Ollama timed out") from exc
-                delay = 0.5 * (2**attempt)
-                await asyncio.sleep(delay)
+                await self._wait_before_retry(attempt)
             except httpx.HTTPStatusError as exc:
-                raise ProviderResponseError(exc.response.status_code) from exc
+                if exc.response.status_code not in self.retryable_status_codes:
+                    raise ProviderResponseError(exc.response.status_code) from exc
+
+                if attempt == max_attempts - 1:
+                    raise ProviderResponseError(exc.response.status_code) from exc
+
+                await self._wait_before_retry(attempt)
+
             except httpx.RequestError as exc:
                 if attempt == max_attempts - 1:
                     raise ProviderConnectionError(
                         f"Ollama request failed: {exc}"
                     ) from exc
-                delay = 0.5 * (2**attempt)
-                await asyncio.sleep(delay)
+                await self._wait_before_retry(attempt)
 
         raise RuntimeError("Unreachable")
 

@@ -13,11 +13,11 @@ class ProviderError(DevPilotError):
 
 
 class ProviderTimeoutError(ProviderError):
-    """Base exception for provider timeout errors."""
+    """Raised when a provider request times out."""
 
 
 class ProviderConnectionError(ProviderError):
-    """Base exception for provider connection errors."""
+    """Raised when a provider connection fails."""
 
 
 class ProviderResponseError(ProviderError):
