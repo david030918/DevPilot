@@ -113,7 +113,9 @@ class OllamaInvestigationProvider(InvestigationProvider):
         except KeyError as exc:
             raise ProviderOutputError("Malformed Ollama response") from exc
         except ValidationError as exc:
-            raise ProviderOutputError(f"Ollama response validation failed: {exc}")
+            raise ProviderOutputError(
+                f"Ollama response validation failed: {exc}"
+            ) from exc
 
     async def investigate(
         self,
