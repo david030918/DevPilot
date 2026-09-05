@@ -617,3 +617,26 @@ async def test_ollama_provider_raises_output_error_when_keyerror_miscover(
         with pytest.raises(ProviderOutputError) as result:
             await provider.investigate(investigation_request)
     assert str(result.value) == "Malformed Ollama response"
+
+
+@pytest.mark.asyncio
+async def test_ollama_provider_raises_output_error_when_secret_issue(
+    investigation_request: InvestigationRequest,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection failed secret-token-123", request=request)
+
+    transport = httpx.MockTransport(handler)
+
+    async with httpx.AsyncClient(transport=transport) as client:
+        provider = OllamaInvestigationProvider(
+            client=client,
+            base_url="http://test",
+            model_name="ollama",
+        )
+
+        with pytest.raises(ProviderConnectionError) as result:
+            await provider.investigate(investigation_request)
+
+    assert "secret-token-123" not in str(result.value)
+    assert isinstance(result.value.__cause__, httpx.ConnectError)

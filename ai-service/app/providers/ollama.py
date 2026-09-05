@@ -94,9 +94,7 @@ class OllamaInvestigationProvider(InvestigationProvider):
 
             except httpx.RequestError as exc:
                 if attempt == max_attempts - 1:
-                    raise ProviderConnectionError(
-                        f"Ollama request failed: {exc}"
-                    ) from exc
+                    raise ProviderConnectionError("Ollama request failed") from exc
                 await self._wait_before_retry(attempt)
 
         raise RuntimeError("Unreachable")
