@@ -545,3 +545,51 @@ async def test_ollama_provider_does_not_retry_non_retryable_http_error(
     assert attempts == 1
     assert sleep_calls == []
     assert result.value.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+@pytest.mark.asyncio
+async def test_ollama_provider_raises_output_error_for_invalid_outer_json(
+    investigation_request: InvestigationRequest,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            status_code=200,
+            text="not Json",
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    async with httpx.AsyncClient(transport=transport) as client:
+        provider = OllamaInvestigationProvider(
+            client=client,
+            base_url="http://test",
+            model_name="ollama",
+        )
+
+        with pytest.raises(ProviderOutputError) as result:
+            await provider.investigate(investigation_request)
+    assert str(result.value) == "Ollama response was not valid JSON"
+
+
+@pytest.mark.asyncio
+async def test_ollama_provider_raises_output_error_when_content_is_missing(
+    investigation_request: InvestigationRequest,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            status_code=200,
+            json={},
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    async with httpx.AsyncClient(transport=transport) as client:
+        provider = OllamaInvestigationProvider(
+            client=client,
+            base_url="http://test",
+            model_name="ollama",
+        )
+
+        with pytest.raises(ProviderOutputError) as result:
+            await provider.investigate(investigation_request)
+    assert str(result.value) == "Malformed Ollama response"

@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 import httpx
 from pydantic import ValidationError
@@ -101,10 +102,16 @@ class OllamaInvestigationProvider(InvestigationProvider):
         raise RuntimeError("Unreachable")
 
     def _parse_response(self, response: httpx.Response) -> InvestigationResponse:
-        data = response.json()
+        try:
+            data = response.json()
+        except json.JSONDecodeError as exc:
+            raise ProviderOutputError("Ollama response was not valid JSON") from exc
         # Output Validate
+
         try:
             return InvestigationResponse.model_validate_json(data["message"]["content"])
+        except KeyError as exc:
+            raise ProviderOutputError("Malformed Ollama response") from exc
         except ValidationError as exc:
             raise ProviderOutputError(f"Ollama response validation failed: {exc}")
 
