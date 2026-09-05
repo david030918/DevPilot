@@ -593,3 +593,27 @@ async def test_ollama_provider_raises_output_error_when_content_is_missing(
         with pytest.raises(ProviderOutputError) as result:
             await provider.investigate(investigation_request)
     assert str(result.value) == "Malformed Ollama response"
+
+
+@pytest.mark.asyncio
+async def test_ollama_provider_raises_output_error_when_keyerror_miscover(
+    investigation_request: InvestigationRequest,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            status_code=200,
+            json={"message": "error"},
+        )
+
+    transport = httpx.MockTransport(handler)
+
+    async with httpx.AsyncClient(transport=transport) as client:
+        provider = OllamaInvestigationProvider(
+            client=client,
+            base_url="http://test",
+            model_name="ollama",
+        )
+
+        with pytest.raises(ProviderOutputError) as result:
+            await provider.investigate(investigation_request)
+    assert str(result.value) == "Malformed Ollama response"

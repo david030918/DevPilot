@@ -110,7 +110,7 @@ class OllamaInvestigationProvider(InvestigationProvider):
 
         try:
             return InvestigationResponse.model_validate_json(data["message"]["content"])
-        except KeyError as exc:
+        except (KeyError, TypeError) as exc:
             raise ProviderOutputError("Malformed Ollama response") from exc
         except ValidationError as exc:
             raise ProviderOutputError(
