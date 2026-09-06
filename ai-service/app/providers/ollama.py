@@ -12,6 +12,7 @@ from app.core.exceptions import (
     ProviderTimeoutError,
 )
 from app.models.investigation import InvestigationRequest, InvestigationResponse
+from app.prompts.investigation import INVESTIGATION_SYSTEM_PROMPT
 from app.providers.base import InvestigationProvider
 
 
@@ -49,15 +50,7 @@ class OllamaInvestigationProvider(InvestigationProvider):
                         "messages": [
                             {
                                 "role": "system",
-                                "content": (
-                                    "You are a software engineering "
-                                    "investigation assistant. "
-                                    "Analyze the supplied GitHub issue. "
-                                    "Return a concise summary, plausible causes, "
-                                    "investigation steps, assumptions, "
-                                    "and suggested tests. "
-                                    "Do not present assumptions as established facts."
-                                ),
+                                "content": INVESTIGATION_SYSTEM_PROMPT,
                             },
                             {
                                 "role": "user",
@@ -119,5 +112,5 @@ class OllamaInvestigationProvider(InvestigationProvider):
         self,
         request: InvestigationRequest,
     ) -> InvestigationResponse:
-        reponse = await self._send_request_with_retry(request)
-        return self._parse_response(reponse)
+        response = await self._send_request_with_retry(request)
+        return self._parse_response(response)

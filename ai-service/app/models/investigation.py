@@ -34,9 +34,21 @@ class SuggestedTest(BaseModel):
     description: str
 
 
+class InvestigationMetadata(BaseModel):
+    provider: str
+    model: str
+    prompt_version: str
+    schema_version: str
+
+
 class InvestigationResponse(BaseModel):
     summary: str
     possible_causes: list[PossibleCause]
     investigation_steps: list[InvestigationStep]
     assumptions: list[str]
     suggested_tests: list[SuggestedTest]
+
+
+class InvestigationResult(BaseModel):
+    investigation: InvestigationResponse
+    metadata: InvestigationMetadata
