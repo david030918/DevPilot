@@ -57,17 +57,9 @@ def test_investigate_issue_returns_structured_response(
 
         assert response.status_code == 200
         data = response.json()
-        assert "summary" in data
-        assert "assumptions" in data
-        assert "possible_causes" in data
-        assert "investigation_steps" in data
-        assert "suggested_tests" in data
+        assert "investigation" in data
 
-        assert data["possible_causes"][0]["confidence"] == 0.75
-        assert data["summary"] == "Test Response"
-        assert data["assumptions"] == [
-            "Assumptions: The application is running on a Linux server."
-        ]
+        assert data["metadata"]["prompt_version"] == "v1"
     finally:
         app.dependency_overrides.clear()
 

@@ -3,7 +3,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 
 from app.api.dependencies import get_investigation_service
-from app.models.investigation import InvestigationRequest, InvestigationResponse
+from app.models.investigation import (
+    InvestigationRequest,
+    InvestigationResult,
+)
 from app.services.investigation import InvestigationService
 
 router = APIRouter(prefix="/ai", tags=["investigation"])
@@ -11,7 +14,7 @@ router = APIRouter(prefix="/ai", tags=["investigation"])
 
 @router.post(
     "/investigate-issue",
-    response_model=InvestigationResponse,
+    response_model=InvestigationResult,
 )
 async def investigate_issue(
     request: InvestigationRequest,
@@ -19,5 +22,5 @@ async def investigate_issue(
         InvestigationService,
         Depends(get_investigation_service),
     ],
-) -> InvestigationResponse:
+) -> InvestigationResult:
     return await service.investigate(request)

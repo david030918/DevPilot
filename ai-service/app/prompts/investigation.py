@@ -1,4 +1,5 @@
 INVESTIGATION_PROMPT_VERSION = "v1"
+INVESTIGATION_SCHEMA_VERSION = "v1"
 
 INVESTIGATION_SYSTEM_PROMPT = (
     "You are a software engineering investigation assistant. "
