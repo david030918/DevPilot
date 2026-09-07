@@ -17,11 +17,19 @@ from app.providers.base import InvestigationProvider
 
 
 class OllamaInvestigationProvider(InvestigationProvider):
+    @property
+    def provider_name(self) -> str:
+        return "ollama"
+
+    @property
+    def model_name(self) -> str:
+        return self._model_name
+
     def __init__(
         self, base_url: str, client: httpx.AsyncClient, model_name: str
     ) -> None:
         self.base_url = base_url
-        self.model_name = model_name
+        self._model_name = model_name
         self.client = client
         self.retryable_status_codes = {
             status.HTTP_502_BAD_GATEWAY,

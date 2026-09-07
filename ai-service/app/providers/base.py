@@ -7,6 +7,14 @@ from app.models.investigation import (
 
 
 class InvestigationProvider(ABC):
+    @property
+    @abstractmethod
+    def provider_name(self) -> str: ...
+
+    @property
+    @abstractmethod
+    def model_name(self) -> str: ...
+
     @abstractmethod
     async def investigate(
         self,

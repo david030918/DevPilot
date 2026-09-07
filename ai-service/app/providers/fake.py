@@ -9,6 +9,14 @@ from app.providers.base import InvestigationProvider
 
 
 class FakeInvestigationProvider(InvestigationProvider):
+    @property
+    def provider_name(self) -> str:
+        return ""
+
+    @property
+    def model_name(self) -> str:
+        return ""
+
     async def investigate(
         self,
         request: InvestigationRequest,
