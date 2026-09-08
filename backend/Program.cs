@@ -15,6 +15,10 @@ builder.Services.AddCors(options =>
       policy.WithOrigins("http://localhost:5173")
           .AllowAnyHeader()
           .AllowAnyMethod()); });
+builder.Services.AddHttpClient("AiService", client =>
+{ var baseUrl = builder.Configuration["AiService:BaseUrl"] ?? throw new InvalidOperationException(
+      "AiService:BaseUrl is not configured.");
+  client.BaseAddress = new(baseUrl!); });
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
