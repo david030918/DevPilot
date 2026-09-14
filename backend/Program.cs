@@ -18,7 +18,8 @@ builder.Services.AddCors(options =>
 builder.Services.AddHttpClient("AiService", client =>
 { var baseUrl = builder.Configuration["AiService:BaseUrl"] ?? throw new InvalidOperationException(
       "AiService:BaseUrl is not configured.");
-  client.BaseAddress = new(baseUrl!); });
+  client.BaseAddress = new(baseUrl!);
+  client.Timeout = TimeSpan.FromSeconds(int.Parse(builder.Configuration["AiService:TimeoutSeconds"] ?? "5")); });
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
