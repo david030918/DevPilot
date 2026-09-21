@@ -5,7 +5,6 @@ services:
       target: development
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
-      Frontend__Origin: http://localhost:${FRONTEND_PORT:-5174}
     ports:
       - "${FRONTEND_PORT:-5174}:5173"
     volumes:
@@ -22,6 +21,7 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ASPNETCORE_ENVIRONMENT: Development
       AI_SERVICE_URL: ${AI_SERVICE_URL:-http://ai-service:8000}
+      Frontend__Origin: http://localhost:${FRONTEND_PORT:-5174}
       ConnectionStrings__DefaultConnection: Host=database;Port=5432;Database=${POSTGRES_DB:-devpilot};Username=${POSTGRES_USER:-devpilot};Password=${POSTGRES_PASSWORD:-devpilot}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
