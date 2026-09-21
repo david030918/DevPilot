@@ -27,7 +27,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 builder.Services.AddCors(options =>
 { options.AddDefaultPolicy(policy =>
-      policy.WithOrigins("http://localhost:5173")
+      policy.WithOrigins(builder.Configuration["Frontend:Origin"] ?? "http://localhost:5174")
           .AllowAnyHeader()
           .AllowAnyMethod()); });
 
