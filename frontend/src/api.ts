@@ -41,6 +41,14 @@ export async function getProjects(): Promise<Project[]> {
     return response.json() as Promise<Project[]>;
 }
 
+export async function getProjectById(id: number): Promise<Project> {
+    const response = await fetch(`${apiBaseUrl}/api/projects/${id}`);
+    if (!response.ok) {
+        throw new ApiError(`Backend returned ${response.status}`, response.status);
+    }
+    return response.json() as Promise<Project>;
+}
+
 export async function createProject(input: ProjectInput): Promise<Project> {
     const response = await fetch(`${apiBaseUrl}/api/projects`, {
         method: "POST",

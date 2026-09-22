@@ -1,6 +1,7 @@
 import {getProjects} from "../api";
 import {useQuery} from "@tanstack/react-query";
 import CreateProjectForm from "../projects/CreateProjectForm";
+import {Link} from "react-router-dom";
 
 export default function ProjectsPage() {
     const projects = useQuery({
@@ -24,10 +25,7 @@ export default function ProjectsPage() {
         <div>
             <h1>Projects</h1>
             {projects.data.map((project) => (
-                <div key={project.id}>
-                    <h2>{project.name}</h2>
-                    <p>{project.repositoryOwner}</p>
-                </div>
+                <Link to={"/projects/" + project.id} key={project.id}>{project.name}</Link>
             ))}
 
             <CreateProjectForm/>
