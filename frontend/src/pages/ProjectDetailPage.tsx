@@ -1,16 +1,30 @@
 import {useParams} from "react-router-dom";
 import {useQuery} from "@tanstack/react-query";
-import {getProjectById} from "../api";
+import {ApiError, getProjectById} from "../api";
 
 export default function ProjectDetailPage() {
     const {projectId} = useParams();
+    const numericProjectId = Number(projectId);
+
+    const isValidProjectId =
+        Number.isInteger(numericProjectId) &&
+        numericProjectId > 0;
+
     const project = useQuery({
-        enabled: projectId !== undefined,
+        enabled: isValidProjectId,
         queryKey: ["projects", projectId],
-        queryFn: () => getProjectById(Number(projectId)),
+        queryFn: () => getProjectById(numericProjectId),
     });
+    if (!isValidProjectId)
+        return (
+            <div>Invalid project ID</div>
+        )
+
     if (project.isPending) {
         return <div>Loading...</div>
+    }
+    if (project.error instanceof ApiError && project.error.status === 404) {
+        return <div>Project not found</div>;
     }
     if (project.isError) {
         return <div>Error: {project.error.message}</div>

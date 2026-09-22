@@ -38,10 +38,12 @@ export default function CreateProjectForm() {
         <form onSubmit={handleSubmit((data) => createProjectMutation.mutate(data))}>
             {createProjectMutation.error && (
                 <p role="alert">
-                    {createProjectMutation.error instanceof ApiError &&
-                    createProjectMutation.error.status === 409
-                        ? "Project already exists"
-                        : "Unable to create project"}
+                    {createProjectMutation.error instanceof ApiError && (
+                        createProjectMutation.error.status === 409
+                            ? "Project already exists"
+                            : createProjectMutation.error.status === 400
+                                ? "backend validation"
+                                : "Unable to create project")}
                 </p>
             )}
             <label>

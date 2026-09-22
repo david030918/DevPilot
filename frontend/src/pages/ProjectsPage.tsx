@@ -17,6 +17,7 @@ export default function ProjectsPage() {
     if (!projects.data || projects.data.length === 0) {
         return (
             <div>No projects found
+                <CreateProjectForm/>
             </div>
         )
     }

@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     ai_provider: str = "fake"
-    model_name: str = "gpt-3.5-turbo"
+    model_name: str = "qwen3.5:2b-q4_K_M"
     request_timeout_seconds: float = 30.0
     openai_api_key: str | None = None
     ollama_base_url: str = "http://localhost:11434"
