@@ -1,5 +1,6 @@
 import {getProjects} from "../api";
 import {useQuery} from "@tanstack/react-query";
+import CreateProjectForm from "../projects/CreateProjectForm";
 
 export default function ProjectsPage() {
     const projects = useQuery({
@@ -13,7 +14,10 @@ export default function ProjectsPage() {
         return <div>Error: {projects.error.message}</div>
     }
     if (!projects.data || projects.data.length === 0) {
-        return <div>No projects found</div>
+        return (
+            <div>No projects found
+            </div>
+        )
     }
 
     return (
@@ -25,6 +29,9 @@ export default function ProjectsPage() {
                     <p>{project.repositoryOwner}</p>
                 </div>
             ))}
+
+            <CreateProjectForm/>
+
         </div>
     );
 }
