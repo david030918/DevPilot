@@ -22,6 +22,13 @@ builder.Services.AddHttpClient("AiService", client =>
   client.BaseAddress = new(baseUrl!);
   client.Timeout = TimeSpan.FromSeconds(int.Parse(builder.Configuration["AiService:TimeoutSeconds"] ?? "50")); });
 
+builder.Services.AddHttpClient("GitHubService", client =>
+{ var baseUrl = builder.Configuration["GitHubService:BaseUrl"] ?? throw new InvalidOperationException(
+      "GitHubService:BaseUrl is not configured.");
+  client.BaseAddress = new(baseUrl!);
+  client.Timeout = TimeSpan.FromSeconds(int.Parse(builder.Configuration["GitHubService:TimeoutSeconds"] ?? "50")); });
+
+
 // API infrastructure
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
