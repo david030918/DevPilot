@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore.Storage;
 namespace DevPilot.Api.Features.GitHub;
 
 public sealed class GitHubClient
@@ -10,6 +11,17 @@ public sealed class GitHubClient
     {
         if (!response.IsSuccessStatusCode)
         {
+            if (response.Headers.TryGetValues("X-Ratelimit-Remaining", out var remain) && remain.Any(v => v == "0"))
+            {
+                //Retry after X-Ratelimit-Reset
+                response.Headers.TryGetValues("X-Ratelimit-Reset", out var githubRateLimitReset);
+                if (githubRateLimitReset is not null && long.TryParse(githubRateLimitReset.FirstOrDefault(), out var githubRateLimitResetLong) && githubRateLimitResetLong > 0)
+                {
+                    throw new RetryLimitExceededException($"GitHub rate limit exceeded.\n Retry after {DateTimeOffset.FromUnixTimeSeconds(githubRateLimitResetLong)}");
+                }
+
+                throw new RetryLimitExceededException("GitHub rate limit exceeded.");
+            }
             throw new HttpRequestException(
                 "Github request failed.", null, response.StatusCode);
         }
@@ -32,7 +44,7 @@ public sealed class GitHubClient
             );
             HandleGitHubResponse(response);
             var issues = await response.Content.ReadFromJsonAsync<GitHubIssueResponse[]>(cancellationToken: cancellationToken);
-            result.AddRange(issues ?? throw new InvalidOperationException("Github returned an empty investigation response."));
+            result.AddRange(issues ?? throw new InvalidOperationException("Github returned an issue-specific wording."));
             if (response.Headers.TryGetValues("Link", out var linkValues) && linkValues.Any(linkValue => linkValue.Contains("rel=\"next\"")))
                 pageNumber++;
             else
