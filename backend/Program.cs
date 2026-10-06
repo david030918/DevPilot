@@ -1,5 +1,6 @@
 using DevPilot.Api.Data;
 using DevPilot.Api.Endpoints;
+using DevPilot.Api.Features.GitHub;
 using DevPilot.Api.Features.Investigations;
 using DevPilot.Api.Features.Projects;
 using FluentValidation;
@@ -9,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Application services
 builder.Services.AddScoped<IValidator<CreateProjectRequest>, CreateProjectValidator>();
 builder.Services.AddScoped<AiServiceClient>();
+builder.Services.AddScoped<GitHubClient>();
 
 // Database
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -25,6 +27,11 @@ builder.Services.AddHttpClient("AiService", client =>
 builder.Services.AddHttpClient("GitHubService", client =>
 { var baseUrl = builder.Configuration["GitHubService:BaseUrl"] ?? throw new InvalidOperationException(
       "GitHubService:BaseUrl is not configured.");
+  client.DefaultRequestHeaders.UserAgent.ParseAdd("DevPilot/1.0");
+  client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+  client.DefaultRequestHeaders.Add(
+      "X-GitHub-Api-Version",
+      "2022-11-28");
   client.BaseAddress = new(baseUrl!);
   client.Timeout = TimeSpan.FromSeconds(int.Parse(builder.Configuration["GitHubService:TimeoutSeconds"] ?? "50")); });
 
@@ -52,5 +59,6 @@ app.MapHealthChecks("/health");
 app.MapProjectEndpoints();
 app.MapSystemEndpoints();
 app.MapOverviewEndpoints();
+app.MapGitHubEndpoints();
 
 app.Run();
