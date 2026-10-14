@@ -15,6 +15,7 @@ vi.mock("../api", async (importOriginal) => {
         createProject: vi.fn(),
     };
 });
+
 test("return Empty state.", async () => {
     const queryClient = new QueryClient();
     vi.mocked(getProjects).mockResolvedValue([]);
@@ -175,4 +176,101 @@ test("show projects when it created", async () => {
     ).toBeInTheDocument();
 
     expect(getProjects).toHaveBeenCalledTimes(2);
+});
+
+test("refuse create when name is empty", async () => {
+    // Arrange
+    vi.mocked(createProject).mockClear();
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: false,
+            },
+        },
+    });
+    vi.mocked(getProjects).mockResolvedValueOnce([]).mockResolvedValueOnce([{
+        id: 2,
+        name: "DevPilot",
+        repositoryOwner: "david",
+        repositoryName: "DevPilot",
+        defaultBranch: "sub",
+        createdAt: "2023-09-01T10:00:00Z",
+    }]);
+    vi.mocked(createProject).mockResolvedValue({
+        id: 2,
+        name: "DevPilot",
+        repositoryOwner: "david",
+        repositoryName: "DevPilot",
+        defaultBranch: "sub",
+        createdAt: "2023-09-01T10:00:00Z",
+    })
+
+    // Act
+    render(
+        <QueryClientProvider client={queryClient}>
+            <MemoryRouter initialEntries={["/projects"]}>
+                <Routes>
+                    <Route
+                        path="/projects"
+                        element={<ProjectsPage/>}
+                    />
+                </Routes>
+            </MemoryRouter>,
+        </QueryClientProvider>,
+    );
+
+    await user.type(await screen.findByLabelText("Name"), "    ")
+    await user.type(await screen.findByLabelText("Repository Owner"), "david");
+    await user.type(await screen.findByLabelText("Repository Name"), "DevPilot");
+    await user.click(
+        screen.getByRole("button", {name: "Create Project"})
+    );
+
+    // Assert
+    expect(
+        await screen.findByText("Name is required")
+    ).toBeInTheDocument();
+
+    expect(createProject).not.toHaveBeenCalled();
+});
+test("refuse create when name is over 200 chr", async () => {
+    // Arrange
+    vi.mocked(createProject).mockClear();
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: false,
+            },
+        },
+    });
+    vi.mocked(getProjects).mockResolvedValueOnce([]);
+    // Act
+    render(
+        <QueryClientProvider client={queryClient}>
+            <MemoryRouter initialEntries={["/projects"]}>
+                <Routes>
+                    <Route
+                        path="/projects"
+                        element={<ProjectsPage/>}
+                    />
+                </Routes>
+            </MemoryRouter>,
+        </QueryClientProvider>,
+    );
+
+    await user.type(await screen.findByLabelText("Name"), "a".repeat(201))
+    await user.type(await screen.findByLabelText("Repository Owner"), "david");
+    await user.type(await screen.findByLabelText("Repository Name"), "DevPilot");
+    await user.click(
+        screen.getByRole("button", {name: "Create Project"})
+    );
+
+    // Assert
+    expect(
+        await screen.findByText("Maximum is 200 characters")
+    ).toBeInTheDocument();
+
+    expect(createProject).not.toHaveBeenCalled();
 });

@@ -226,4 +226,28 @@ public class ProjectEndpointTests
             request2);
         Assert.Equal(HttpStatusCode.Conflict, response2.StatusCode);
     }
+
+    [Fact]
+    public async Task CreateProject_WithoutRepository_ReturnsCreated()
+    {
+        await using var factory =
+            new DevPilotWebApplicationFactory();
+        await factory.InitializeAsync();
+        var client = factory.CreateClient();
+
+        var request1 = new
+        {
+            Name = "P1"
+        };
+
+        var response1 = await client.PostAsJsonAsync(
+            "/api/projects",
+            request1);
+        Assert.Equal(
+            HttpStatusCode.Created,
+            response1.StatusCode);
+        var responseBody = await response1.Content.ReadFromJsonAsync<ProjectResponse>();
+        Assert.NotNull(responseBody);
+        Assert.True(responseBody.Id > 0);
+    }
 }

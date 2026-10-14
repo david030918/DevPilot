@@ -6,7 +6,7 @@ import {ApiError, createProject} from "../api";
 
 export default function CreateProjectForm() {
     const createProjectSchema = z.object({
-        name: z.string().min(1, "Name is required"),
+        name: z.string().trim().min(1, "Name is required").max(200, "Maximum is 200 characters"),
         repositoryOwner: z.string().min(1, "Repository owner is required"),
         repositoryName: z.string().min(1, "Repository name is required"),
         defaultBranch: z.string().min(1, "Default branch is required"),
